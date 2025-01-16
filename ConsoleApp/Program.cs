@@ -1,4 +1,6 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Driver;
 
 string connectionString = "mongodb://localhost:27017"; 
 var client = new MongoClient(connectionString);
@@ -156,9 +158,10 @@ void CollectionsMenu(MongoClient client, string selectedDatabaseName)
         Console.WriteLine("1. Create Collection");
         Console.WriteLine("2. List Collections");
         Console.WriteLine("3. Select Collection");
-        Console.WriteLine("4. Delete Collection");
-        Console.WriteLine("5. Back to Main Menu");
-        Console.WriteLine("6. Exit\n");
+        Console.WriteLine("4. Edit Collection");
+        Console.WriteLine("5. Delete Collection");
+        Console.WriteLine("6. Back to Main Menu");
+        Console.WriteLine("7. Exit\n");
         Console.Write("Choose an option: ");
 
         var collectionOption = Console.ReadLine();
@@ -180,12 +183,15 @@ void CollectionsMenu(MongoClient client, string selectedDatabaseName)
                 }
                 break;
             case "4":
-                DeleteCollection(client, selectedDatabaseName);
+                EditCollection(client, selectedDatabaseName);
                 break;
             case "5":
+                DeleteCollection(client, selectedDatabaseName);
+                break;
+            case "6":
                 selectedDatabaseName = string.Empty;
                 return;
-            case "6":
+            case "7":
                 Environment.Exit(0);
                 break;
             default:
@@ -195,6 +201,7 @@ void CollectionsMenu(MongoClient client, string selectedDatabaseName)
         }
     }
 }
+
 
 void CreateCollection(MongoClient client, string selectedDatabaseName)
 {
@@ -284,6 +291,39 @@ string? SelectCollection(MongoClient client, string selectedDatabaseName)
     }	
 }
 
+void EditCollection(MongoClient client, string selectedDatabaseName)
+{
+    var database = client.GetDatabase(selectedDatabaseName);
+    var collectionNames = database.ListCollectionNames().ToList();
+
+    Console.Write("\nEnter the name of the collection: ");
+    var oldName = Console.ReadLine();
+
+    Console.Write("Enter the new name of the collection: ");
+    var newName = Console.ReadLine();
+
+    if (!string.IsNullOrWhiteSpace(oldName) && !string.IsNullOrWhiteSpace(newName))
+    {
+
+        if (collectionNames.Contains(oldName) && !collectionNames.Contains(newName))
+        {
+            database.RenameCollection(oldName, newName);
+            Console.WriteLine($"Collection '{oldName}' renamed to '{newName}'.");
+        }
+
+        else
+        {
+            Console.WriteLine("Collection not found or new name already exists.");
+        }
+    }
+
+    else
+    {
+        Console.WriteLine("Invalid name.");
+    }
+    Console.ReadLine();
+}
+
 void DeleteCollection(MongoClient client, string selectedDatabaseName)
 {
     Console.Write("Enter the name of the collection to delete: ");
@@ -316,25 +356,99 @@ void DeleteCollection(MongoClient client, string selectedDatabaseName)
 // Document methods
 void DocumentsMenu(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
 {
-    throw new NotImplementedException();
+    while (true)
+    {
+        Console.Clear();
+        Console.WriteLine($"Database selected: {selectedDatabaseName}");
+        Console.WriteLine($"Collection selected: {selectedCollectionName}");
+        Console.WriteLine("1. Create Document");
+        Console.WriteLine("2. List Documents");
+        Console.WriteLine("3. Edit Document");
+        Console.WriteLine("4. Delete Collection");
+        Console.WriteLine("5. Return to previous menu");
+        Console.WriteLine("6. Exit\n");
+        Console.Write("Choose an option: ");
+
+        var collectionOption = Console.ReadLine();
+
+        switch (collectionOption)
+        {
+            case "1":
+                CreateDocument(client, selectedDatabaseName, selectedCollectionName);
+                break;
+            case "2":
+                ListDocuments(client, selectedDatabaseName, selectedCollectionName);
+                break;
+            case "3":
+                EditDocument(client, selectedDatabaseName, selectedCollectionName);
+                break;
+            case "4":
+                DeleteDocument(client, selectedDatabaseName, selectedCollectionName);
+                break;
+            case "5":
+                selectedCollectionName = string.Empty;
+                return;
+            case "6":
+                Environment.Exit(0);
+                break;
+            default:
+                Console.WriteLine("Invalid option");
+                Console.ReadLine();
+                break;
+        }
+    }
 }
 
-void InsertDocument(MongoClient client)
+void CreateDocument(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
+{
+    var database = client.GetDatabase(selectedDatabaseName);
+
+    Console.WriteLine("Enter the document data in JSON format (e.g., {\"key1\": \"value1\", \"key2\": \"value2\", ...}):");
+    var jsonData = Console.ReadLine();
+    
+    if (!string.IsNullOrWhiteSpace(jsonData))
+    {
+        var collection = database.GetCollection<BsonDocument>(selectedCollectionName);
+        var document = BsonDocument.Parse(jsonData);
+        collection.InsertOne(document);
+        Console.WriteLine("Document created successfully.");
+    }
+    else
+    {
+        Console.WriteLine("Invalid data.");
+    }
+    Console.ReadLine();
+}
+
+void ListDocuments(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
+{
+    var database = client.GetDatabase(selectedDatabaseName);
+    var collection = database.GetCollection<BsonDocument>(selectedCollectionName);
+    var documents = collection.Find(FilterDefinition<BsonDocument>.Empty).ToList();
+
+    if (documents.Count != 0)
+    {
+        Console.WriteLine($"Documents in the collection '{selectedCollectionName}':");
+        foreach (var document in documents)
+        {   
+            Console.WriteLine(document.ToJson(new JsonWriterSettings { Indent = true }));
+        }
+    }
+
+    else
+    {
+        Console.WriteLine("No documents found.");
+        Console.ReadLine();
+    }   
+    Console.ReadLine();
+}
+
+void EditDocument(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
 {
     throw new NotImplementedException();
 }
 
-void ListDocuments(MongoClient client)
-{
-    throw new NotImplementedException();
-}
-
-void EditDocument(MongoClient client)
-{
-    throw new NotImplementedException();
-}
-
-void DeleteDocument(MongoClient client)
+void DeleteDocument(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
 {
     throw new NotImplementedException();
 }
