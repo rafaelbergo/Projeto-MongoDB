@@ -475,7 +475,6 @@ void EditDocument(MongoClient client, string selectedDatabaseName, string select
             Console.ReadLine();
             break;
     }
-    Console.ReadLine();
 }
 
 void EditDocumentById(IMongoCollection<BsonDocument> collection)
@@ -519,7 +518,40 @@ void EditDocumentById(IMongoCollection<BsonDocument> collection)
 
 void EditDocumentByKeyValue(IMongoCollection<BsonDocument> collection)
 {
-    throw new NotImplementedException();
+    Console.WriteLine("Enter the filter in JSON format {\"nome\": \"valor\"}:");
+    var jsonValue = Console.ReadLine();
+
+    if (!string.IsNullOrWhiteSpace(jsonValue))
+    {
+        var filter = BsonDocument.Parse(jsonValue);
+        var existingDocument = collection.Find(filter).FirstOrDefault();
+
+        if (existingDocument != null)
+        {
+            Console.WriteLine("Enter the new data in JSON format {\"key1\": \"value1\", \"key2\": \"value2\", ...}:");
+            var jsonData = Console.ReadLine();
+
+            if (!string.IsNullOrWhiteSpace(jsonData))
+            {
+                var update = new BsonDocument("$set", BsonDocument.Parse(jsonData));
+                collection.UpdateOne(filter, update);
+                Console.WriteLine("Document updated.");
+            }
+            else
+            {
+                Console.WriteLine("Invalid data.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Document not found.");
+        }
+    }
+    else
+    {
+        Console.WriteLine("Invalid key or value.");
+    }
+    Console.ReadLine();
 }
 
 void DeleteDocument(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
@@ -554,7 +586,6 @@ void DeleteDocument(MongoClient client, string selectedDatabaseName, string sele
             Console.ReadLine();
             break;
     }
-    Console.ReadLine();
 }
 
 void DeleteDocumentById(IMongoCollection<BsonDocument> collection)
