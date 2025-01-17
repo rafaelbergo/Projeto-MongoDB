@@ -445,10 +445,168 @@ void ListDocuments(MongoClient client, string selectedDatabaseName, string selec
 
 void EditDocument(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
 {
+    var database = client.GetDatabase(selectedDatabaseName);
+    var collection = database.GetCollection<BsonDocument>(selectedCollectionName);
+    
+    Console.WriteLine("\nChoose how to find the document to edit:");
+    Console.WriteLine("1. Find by ID");
+    Console.WriteLine("2. Find by Key:Value");
+    Console.WriteLine("3. Return to previous menu\n");
+
+    Console.Write("Choose an option: ");
+
+    var option = Console.ReadLine();
+
+    switch (option)
+    {
+        case "1":
+            EditDocumentById(collection);
+            break;
+
+        case "2":
+            EditDocumentByKeyValue(collection);
+            break;
+
+        case "3":
+            return;
+
+        default:
+            Console.WriteLine("Invalid option");
+            Console.ReadLine();
+            break;
+    }
+    Console.ReadLine();
+}
+
+void EditDocumentById(IMongoCollection<BsonDocument> collection)
+{
+    Console.Write("Enter the ID of the document to edit (_id): ");
+    var idInput = Console.ReadLine();
+
+    if(!string.IsNullOrWhiteSpace(idInput))
+    {
+        var objectId = new ObjectId(idInput);
+        var filter = Builders<BsonDocument>.Filter.Eq("_id", objectId);
+        var existingDocument = collection.Find(filter).FirstOrDefault();
+
+        if (existingDocument != null)
+        {
+            Console.WriteLine("Enter the new data in JSON format {\"key1\": \"value1\", \"key2\": \"value2\", ...}:");
+            var jsonData = Console.ReadLine();
+
+            if (!string.IsNullOrWhiteSpace(jsonData))
+            {
+                var update = new BsonDocument("$set", BsonDocument.Parse(jsonData));
+                collection.UpdateOne(filter, update);
+                Console.WriteLine("Document updated.");
+            }
+            else
+            {
+                Console.WriteLine("Invalid data.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Document not found.");
+        }
+    }
+    else
+    {
+        Console.WriteLine("Invalid ID.");
+    }
+    Console.ReadLine();
+}
+
+void EditDocumentByKeyValue(IMongoCollection<BsonDocument> collection)
+{
     throw new NotImplementedException();
 }
 
 void DeleteDocument(MongoClient client, string selectedDatabaseName, string selectedCollectionName)
 {
-    throw new NotImplementedException();
+    var database = client.GetDatabase(selectedDatabaseName);
+    var collection = database.GetCollection<BsonDocument>(selectedCollectionName);
+    
+    Console.WriteLine("\nChoose how to find the document to delete:");
+    Console.WriteLine("1. Find by ID");
+    Console.WriteLine("2. Find by Key:Value");
+    Console.WriteLine("3. Return to previous menu\n");
+
+    Console.Write("Choose an option: ");
+
+    var option = Console.ReadLine();
+
+    switch (option)
+    {
+        case "1":
+            DeleteDocumentById(collection);
+            break;
+
+        case "2":
+            DeleteDocumentByKeyValue(collection);
+            break;
+
+        case "3":
+            return;
+
+        default:
+            Console.WriteLine("Invalid option");
+            Console.ReadLine();
+            break;
+    }
+    Console.ReadLine();
+}
+
+void DeleteDocumentById(IMongoCollection<BsonDocument> collection)
+{
+    Console.Write("Enter the ID of the document to delete (_id): ");
+    var idInput = Console.ReadLine();
+
+    if (!string.IsNullOrWhiteSpace(idInput))
+    {
+        var objectId = new ObjectId(idInput);
+
+        var filter = Builders<BsonDocument>.Filter.Eq("_id", objectId);
+        var existingDocument = collection.Find(filter).FirstOrDefault();
+        if (existingDocument != null)
+        {
+            collection.DeleteOne(filter);
+            Console.WriteLine("Document deleted.");
+        }
+        else
+        {
+            Console.WriteLine("Document not found.");
+        }    
+    }
+    else
+    {
+        Console.WriteLine("Invalid ID.");
+    }
+    Console.ReadLine();
+}
+
+void DeleteDocumentByKeyValue(IMongoCollection<BsonDocument> collection)
+{
+    Console.WriteLine("Enter the filter in JSON format {\"nome\": \"valor\"}:");
+    var jsonValue = Console.ReadLine();
+
+    if (!string.IsNullOrWhiteSpace(jsonValue))
+    {
+        var filter = BsonDocument.Parse(jsonValue);
+        var existingDocument = collection.Find(filter).FirstOrDefault();
+        
+        if(existingDocument != null)
+        {
+            collection.DeleteOne(filter);
+            Console.WriteLine("Document deleted.");
+        }
+        else
+        {
+            Console.WriteLine("Document not found.");
+        }
+    }
+    else
+    {
+        Console.WriteLine("Invalid key or value.");
+    }
 }
